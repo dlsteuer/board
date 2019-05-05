@@ -114,7 +114,12 @@ class Game extends React.Component {
       this.hideScoreboard = options.hideScoreboard === "true";
       this.title = options.title && decodeURIComponent(options.title);
       this.props.setGameOptions(options);
-      this.props.fetchFrames();
+      if (!options.dev) {
+        this.props.fetchFrames();
+      } else {
+        console.log("setting up control socket...");
+        this.props.initControlSocket();
+      }
     } else {
       this.invalidArgs = true;
     }

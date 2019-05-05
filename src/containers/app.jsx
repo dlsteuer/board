@@ -9,7 +9,8 @@ import {
   setGameOptions,
   stepForwardFrame,
   stepBackwardFrame,
-  highlightSnake
+  highlightSnake,
+  initControlSocket
 } from "../actions";
 
 const options = parseQueryString(window.location.search);
@@ -29,6 +30,7 @@ const mapStateToProps = state => {
 const mapDispatchToProps = dispatch => ({
   setGameOptions: options => dispatch(setGameOptions(options)),
   fetchFrames: () => dispatch(fetchFrames()),
+  initControlSocket: () => dispatch(initControlSocket()),
   toggleTheme: () => dispatch(toggleTheme()),
   reloadGame: () => dispatch(reloadGame()),
   toggleGamePause: paused => dispatch(toggleGamePause(paused)),

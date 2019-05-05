@@ -44,6 +44,8 @@ export default (state = {}, action) => {
           : null
       });
       return { ...state, highlightedSnake: action.snakeId };
+    case "INIT_CONTROL_SOCKET":
+      return { ...state, controlSocket: action.controlSocket };
     default:
       return { ...state };
   }

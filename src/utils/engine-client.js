@@ -87,7 +87,7 @@ function getSnakeTailSvgUrl(path) {
   return svgUrlFromName("images/snake/tail", effectivePath);
 }
 
-async function prepareFrame(frame) {
+export async function prepareFrame(frame) {
   await setHeadAndTailSvgs(frame.Snakes);
 }
 
@@ -115,4 +115,8 @@ export async function streamAllFrames(baseUrl, gameId, receiveFrame) {
 
 export function getFrameByTurn(frames, turn) {
   return frames.filter(frame => frame.turn === turn)[0];
+}
+
+export function openControlSocket(baseUrl) {
+  return new WebSocket(`${httpToWsProtocol(baseUrl)}/control`);
 }

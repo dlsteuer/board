@@ -1,4 +1,11 @@
-import { delay, getFrameByTurn, streamAllFrames } from "../utils/engine-client";
+import {
+  delay,
+  fetchGameInfo,
+  getFrameByTurn,
+  streamAllFrames,
+  openControlSocket,
+  prepareFrame
+} from "../utils/engine-client";
 import { themes } from "../theme";
 
 const DEFAULT_FPS = 20;
@@ -30,6 +37,11 @@ export const receiveFrame = (game, frame) => ({
 export const setCurrentFrame = frame => ({
   type: "SET_CURRENT_FRAME",
   frame
+});
+
+export const setControlSocket = socket => ({
+  type: "INIT_CONTROL_SOCKET",
+  controlSocket: socket
 });
 
 export const pauseGame = () => ({
@@ -142,8 +154,18 @@ export const toggleTheme = themeToSet => {
 
 export const stepForwardFrame = () => {
   return async (dispatch, getState) => {
-    const { currentFrame, frames } = getState();
+    const { currentFrame, frames, gameOptions, controlSocket } = getState();
     const nextFrame = currentFrame.turn + 1;
+    if (gameOptions.dev) {
+      controlSocket.send(
+        JSON.stringify({
+          gameId: gameOptions.game,
+          action: "getFrame",
+          args: nextFrame
+        })
+      );
+      return;
+    }
     const stepToFrame = getFrameByTurn(frames, nextFrame);
     if (stepToFrame) {
       dispatch(setCurrentFrame(stepToFrame));
@@ -159,5 +181,48 @@ export const stepBackwardFrame = () => {
     if (stepToFrame) {
       dispatch(setCurrentFrame(stepToFrame));
     }
+  };
+};
+
+export const initControlSocket = () => {
+  return async (dispatch, getState) => {
+    console.log("init control socket");
+
+    const { gameOptions } = getState();
+    const game = await fetchGameInfo(gameOptions.engine, gameOptions.game);
+    const socket = openControlSocket(gameOptions.engine);
+    socket.onopen = function() {
+      console.log("control socket opened");
+      socket.send(
+        JSON.stringify({
+          gameId: gameOptions.game,
+          action: "getFrame",
+          args: 0
+        })
+      );
+    };
+
+    socket.onmessage = async function(e) {
+      const data = JSON.parse(e.data);
+      if (data.Error) {
+        console.error(data.Message);
+        return;
+      }
+
+      switch (data.Type) {
+        case "frame":
+          const frameData = JSON.parse(data.Data["frame"]);
+          await prepareFrame(frameData);
+          dispatch(receiveFrame(game, frameData));
+          dispatch(setCurrentFrame(getState().frames[0]));
+          break;
+        default:
+      }
+    };
+
+    socket.onclose = function() {
+      console.log("control socket closed.");
+    };
+    dispatch(setControlSocket(socket));
   };
 };
